@@ -23,8 +23,13 @@
  */
 package FastNote;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import static java.lang.Thread.sleep;
+import javax.swing.JMenu;
+import javax.swing.JOptionPane;
+import javax.swing.Timer;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 
@@ -32,46 +37,43 @@ import javax.swing.event.MenuListener;
  *
  * @author Cory Buck
  */
-public class FastNoteDriver extends Thread{
+public class FastNoteDriver{
     
     static private MenuListener new_listener;
+    static private MenuListener[] close_listener = new MenuListener[10];
     
     private static FastNote[] notes = new FastNote[10];
     private static int num_notes = 0;
     
-    @Override
-    public void run() {
-        notes[num_notes] = new FastNote(new_listener);
-        notes[num_notes].start();
-        num_notes++;
-     
-        while(true){
-            if(!notes[0].frame.isVisible() && num_notes == 1) break;
-            for(int i = 0; i < num_notes; i++){
-                if(!notes[i].frame.isVisible()){
-                    if(num_notes == 1) break;
-                    for(int j = i; j < num_notes -1; j++){
-                        notes[j] = notes[j+1];
-                    }
-                    num_notes--;
-                }
-            }
-            try{sleep(0);}catch(InterruptedException e){}
-        }
-        notes[0].frame.dispatchEvent(new WindowEvent(notes[0].frame, WindowEvent.WINDOW_CLOSING));
+    public FastNoteDriver(){
+        setCloseNoteListener(0);
+        setNewNoteListener();
         
+        notes[0] = new FastNote(new_listener, close_listener[0]);
+        notes[0].start();
+        num_notes++;
     }
     
-    public static void main(String[] args) {
-        new_listener = new MenuListener(){
-
+    public void setCloseNoteListener(final int i){
+        close_listener[i] = new MenuListener(){
             @Override
-            public void menuSelected(MenuEvent me) {
-                if(num_notes < notes.length){
-                    notes[num_notes] = new FastNote(new_listener);
-                    notes[num_notes].start();
-                    num_notes++;
-                }
+            public void menuSelected(final MenuEvent me) {
+                new Timer(200, new ActionListener(){
+                    @Override
+                    public void actionPerformed(ActionEvent ae) {
+                        if(JOptionPane.showConfirmDialog(null, "Are you sure?","Close Fast Note",JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
+                            if(num_notes == 1){
+                                notes[i].frame.dispatchEvent(new WindowEvent(notes[i].frame, WindowEvent.WINDOW_CLOSING));
+                            }else{
+                                notes[i].frame.setVisible(false);
+                                num_notes--;
+                            }
+                        }
+                        ((JMenu)me.getSource()).setSelected(false);
+                        ((Timer)ae.getSource()).stop();
+                    }
+                    
+                }).start();
             }
 
             @Override
@@ -81,8 +83,45 @@ public class FastNoteDriver extends Thread{
             public void menuCanceled(MenuEvent me) {}
             
         };
-        
-        (new FastNoteDriver()).start();
+    }
+    
+    public void setNewNoteListener(){
+        new_listener = new MenuListener(){
+            @Override
+            public void menuSelected(MenuEvent me) {
+                ((JMenu)me.getSource()).setSelected(false);
+                if(num_notes < notes.length){
+                    for(int i = 0; i < notes.length; i++){
+                        if(notes[i] != null){
+                            if(!notes[i].frame.isVisible()){
+                                setCloseNoteListener(i);
+                                notes[i] = new FastNote(new_listener, close_listener[i]);
+                                notes[i].start();
+                                break;
+                            }
+                        }else{
+                            setCloseNoteListener(i);
+                            notes[i] = new FastNote(new_listener, close_listener[i]);
+                            notes[i].start();
+                            break;
+                        }
+                    }
+                    num_notes++;
+                }
+                
+            }
+
+            @Override
+            public void menuDeselected(MenuEvent me) {}
+
+            @Override
+            public void menuCanceled(MenuEvent me) {}
+            
+        };
+    }
+
+    public static void main(String[] args) {
+        new FastNoteDriver();
         
     }
 

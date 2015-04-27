@@ -62,8 +62,9 @@ public class FastNote extends Thread{
     final private int color_option = (int) (Math.random() * 5);
     final private Color color = new Color(colors[color_option][0],colors[color_option][1],colors[color_option][2]);
     
-    public FastNote(MenuListener ml){
+    public FastNote(MenuListener ml, MenuListener cl){
         new_listener = ml;
+        close_listener = cl;
         createQuickNote();
         addDraggable();
     }
@@ -82,6 +83,8 @@ public class FastNote extends Thread{
     
     private JMenuBar createMenuBar(){
         JMenuBar menu_bar = new JMenuBar();
+        
+        
         menu_bar.setBackground(color);
         JMenu menu = new JMenu("New");
         
@@ -91,18 +94,7 @@ public class FastNote extends Thread{
         menu_bar.add(Box.createHorizontalGlue());
         menu = new JMenu("Close");
         menu.setMnemonic(KeyEvent.VK_C);
-        menu.addMenuListener(new MenuListener(){
-            @Override
-            public void menuSelected(MenuEvent me) {
-                if(JOptionPane.showConfirmDialog(null, "Are you sure you want to delete your Quick Note?","WARNING", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
-                    frame.setVisible(false);
-                }
-            }
-            @Override
-            public void menuDeselected(MenuEvent me) {}
-            @Override
-            public void menuCanceled(MenuEvent me) {}
-        });
+        menu.addMenuListener(close_listener);
         menu_bar.add(menu);
         
         return menu_bar;
