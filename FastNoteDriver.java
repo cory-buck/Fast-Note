@@ -26,7 +26,6 @@ package FastNote;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
-import static java.lang.Thread.sleep;
 import javax.swing.JMenu;
 import javax.swing.JOptionPane;
 import javax.swing.Timer;
@@ -40,7 +39,7 @@ import javax.swing.event.MenuListener;
 public class FastNoteDriver{
     
     static private MenuListener new_listener;
-    static private MenuListener[] close_listener = new MenuListener[10];
+    final static private MenuListener[] close_listener = new MenuListener[10];
     
     private static FastNote[] notes = new FastNote[10];
     private static int num_notes = 0;
@@ -54,25 +53,26 @@ public class FastNoteDriver{
         num_notes++;
     }
     
-    public void setCloseNoteListener(final int i){
+    private void setCloseNoteListener(final int i){
         close_listener[i] = new MenuListener(){
             @Override
             public void menuSelected(final MenuEvent me) {
                 new Timer(200, new ActionListener(){
                     @Override
                     public void actionPerformed(ActionEvent ae) {
-                        if(JOptionPane.showConfirmDialog(null, "Are you sure?","Close Fast Note",JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
+                        if(JOptionPane.showConfirmDialog(notes[i].frame, "Are you sure?","Close Fast Note",JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
                             if(num_notes == 1){
                                 notes[i].frame.dispatchEvent(new WindowEvent(notes[i].frame, WindowEvent.WINDOW_CLOSING));
                             }else{
                                 notes[i].frame.setVisible(false);
+                                notes[i] = null;
+                                close_listener[i] = null;
                                 num_notes--;
                             }
                         }
                         ((JMenu)me.getSource()).setSelected(false);
                         ((Timer)ae.getSource()).stop();
                     }
-                    
                 }).start();
             }
 
@@ -85,29 +85,30 @@ public class FastNoteDriver{
         };
     }
     
-    public void setNewNoteListener(){
+    private void setNewNoteListener(){
+        
         new_listener = new MenuListener(){
             @Override
-            public void menuSelected(MenuEvent me) {
-                ((JMenu)me.getSource()).setSelected(false);
-                if(num_notes < notes.length){
-                    for(int i = 0; i < notes.length; i++){
-                        if(notes[i] != null){
-                            if(!notes[i].frame.isVisible()){
-                                setCloseNoteListener(i);
-                                notes[i] = new FastNote(new_listener, close_listener[i]);
-                                notes[i].start();
-                                break;
+            public void menuSelected(final MenuEvent me) {
+                new Timer(200, new ActionListener(){
+                    @Override
+                    public void actionPerformed(ActionEvent ae){
+                        int l = notes.length;
+                        if(num_notes < l){
+                            for(int i = 0; i < l; i++){
+                                if(notes[i] == null){
+                                    setCloseNoteListener(i);
+                                    notes[i] = new FastNote(new_listener, close_listener[i]);
+                                    notes[i].start();
+                                    break;
+                                }
                             }
-                        }else{
-                            setCloseNoteListener(i);
-                            notes[i] = new FastNote(new_listener, close_listener[i]);
-                            notes[i].start();
-                            break;
+                            num_notes++;
                         }
+                        ((JMenu)me.getSource()).setSelected(false);
+                        ((Timer)ae.getSource()).stop();
                     }
-                    num_notes++;
-                }
+                }).start();
                 
             }
 
